@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GAVIN EDU-PLAY | Versi Stabil</title>
+    <title>GAVIN EDU-PLAY | Final Stable</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap');
         body { margin: 0; background: #B5FFFC; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Quicksand', sans-serif; }
-        #game-container { border: 8px solid white; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+        #game-container { border: 8px solid white; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); background: #60DDCC; }
         
-        /* Tombol & Overlay */
         #parent-btn { position: fixed; bottom: 20px; left: 20px; padding: 12px 20px; background: white; border: none; border-radius: 50px; cursor: pointer; z-index: 1000; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         #parent-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 5000; flex-direction: column; justify-content: center; align-items: center; color: #333; }
         .gate-box { background: white; padding: 30px; border-radius: 25px; text-align: center; width: 340px; }
         .upload-section { margin: 15px 0; padding: 10px; border: 2px dashed #4CAF50; border-radius: 15px; background: #f9f9f9; }
-        input[type="file"] { width: 100%; margin-top: 5px; font-size: 12px; }
+        input[type="file"] { width: 100%; margin-top: 5px; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -36,17 +35,17 @@
         <h3 style="margin-top:0">🎨 Pengaturan Gambar</h3>
         
         <div class="upload-section">
-            <label style="font-size:12px; font-weight:bold;">Latar Belakang (BG):</label>
-            <input type="file" accept="image/*" onchange="saveToStorage(event, 'bg_gavin')">
+            <label style="font-size:12px; font-weight:bold;">Latar Belakang:</label>
+            <input type="file" accept="image/*" onchange="saveWithCompression(event, 'bg_gavin')">
         </div>
 
         <div class="upload-section">
             <label style="font-size:12px; font-weight:bold;">Karakter Gavin:</label>
-            <input type="file" accept="image/*" onchange="saveToStorage(event, 'char_gavin')">
+            <input type="file" accept="image/*" onchange="saveWithCompression(event, 'char_gavin')">
         </div>
 
         <button onclick="location.reload()" style="background:#2196F3; color:white; padding:12px; border:none; border-radius:10px; width:100%; cursor:pointer; font-weight:bold;">TERAPKAN & REFRESH</button>
-        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer; font-size:11px;">Reset ke Default</button>
+        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer; font-size:11px;">Hapus & Reset Semua</button>
     </div>
 </div>
 
@@ -54,7 +53,7 @@
     let currentAns = 0;
 
     function openGate() {
-        let a = Math.floor(Math.random()*5)+2; let b = Math.floor(Math.random()*4)+2;
+        let a = Math.floor(Math.random()*5)+3; let b = Math.floor(Math.random()*4)+2;
         currentAns = a * b;
         document.getElementById('math-question').innerText = `Berapa ${a} x ${b}?`;
         document.getElementById('parent-overlay').style.display = 'flex';
@@ -66,44 +65,73 @@
         if(parseInt(document.getElementById('gate-answer').value) === currentAns) {
             document.getElementById('security-gate').style.display = 'none';
             document.getElementById('monitor-info').style.display = 'block';
-        } else { alert("Jawaban Salah!"); document.getElementById('parent-overlay').style.display = 'none'; }
+        } else { alert("Jawaban Salah!"); closeOverlay(); }
     }
 
-    function saveToStorage(event, key) {
+    function closeOverlay() { document.getElementById('parent-overlay').style.display = 'none'; }
+
+    // --- FITUR KOMPRESI GAMBAR ---
+    function saveWithCompression(event, key) {
         const file = event.target.files[0];
-        if (file && file.size < 2000000) { // Maksimal 2MB
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                localStorage.setItem(key, e.target.result);
-                alert("Gambar tersimpan di memori browser!");
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Perkecil ke lebar maksimal 1000px agar memori aman
+                const maxWidth = 1000;
+                const scale = maxWidth / img.width;
+                canvas.width = maxWidth;
+                canvas.height = img.height * scale;
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Ubah ke JPEG kualitas 0.6 (sangat ringan)
+                const compressedData = canvas.toDataURL('image/jpeg', 0.6);
+                
+                try {
+                    localStorage.setItem(key, compressedData);
+                    alert("Gambar dioptimalkan & disimpan!");
+                } catch (err) {
+                    alert("Memori browser penuh! Gunakan gambar lain.");
+                }
             };
-            reader.readAsDataURL(file);
-        } else {
-            alert("File terlalu besar atau tidak ada!");
-        }
+        };
+        reader.readAsDataURL(file);
     }
 
     class GameScene extends Phaser.Scene {
         constructor() { super('GameScene'); }
         preload() {
-            // Cek Data dari Browser
             const bgData = localStorage.getItem('bg_gavin');
             const charData = localStorage.getItem('char_gavin');
 
-            // Logika Fallback: Jika data ada pakai Base64, jika tidak pakai Placeholder
-            if(bgData) this.textures.addBase64('bg', bgData);
-            else this.load.image('bg', 'https://via.placeholder.com/1280x720/80deea/ffffff?text=Upload+Latar+Belakang');
+            // Sistem Fallback (Jika data error/kosong, game tidak hilang)
+            if(bgData && bgData.startsWith('data:image')) {
+                this.textures.addBase64('bg', bgData);
+            } else {
+                this.load.image('bg', 'https://via.placeholder.com/1280x720/60DDCC/FFFFFF?text=Gunakan+Tombol+Dashboard+untuk+Upload');
+            }
 
-            if(charData) this.textures.addBase64('char', charData);
-            else this.load.image('char', 'https://via.placeholder.com/300x400/ffb300/ffffff?text=Gavin');
+            if(charData && charData.startsWith('data:image')) {
+                this.textures.addBase64('char', charData);
+            } else {
+                this.load.image('char', 'https://via.placeholder.com/200x300/FFC107/FFFFFF?text=Gavin');
+            }
             
             this.load.image('btn', 'https://via.placeholder.com/200x80/4caf50/ffffff?text=PLAY');
         }
+
         create() {
             this.add.image(640, 360, 'bg').setDisplaySize(1280, 720);
-            this.add.image(400, 500, 'char').setScale(0.8);
+            this.add.image(400, 500, 'char').setScale(1.0);
             let playBtn = this.add.image(900, 450, 'btn').setInteractive({useHandCursor: true});
-            playBtn.on('pointerdown', () => alert("Mulai Petualangan!"));
+            playBtn.on('pointerdown', () => alert("Mulai Petualangan Gavin!"));
         }
     }
 
@@ -111,6 +139,7 @@
         type: Phaser.AUTO,
         parent: 'game-container',
         width: 1280, height: 720,
+        backgroundColor: '#60DDCC',
         scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         scene: [GameScene]
     };
