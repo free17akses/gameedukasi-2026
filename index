@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GAVIN G.E BERKAH PERKASA - Game Edukasi</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #1a1a1a; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden; 
+            font-family: 'Arial', sans-serif;
+        }
+        /* Style untuk pemantauan orang tua di pojok kiri bawah */
+        #parent-monitor { 
+            position: fixed; 
+            bottom: 5px; 
+            left: 10px; 
+            color: rgba(255,255,255,0.4); 
+            font-size: 11px; 
+            pointer-events: none; 
+            z-index: 100;
+        }
+        canvas {
+            border: 4px solid #fff;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container"></div>
+    <div id="parent-monitor">Pantauan Orang Tua - Durasi Main: 0m 0s</div>
+
+<script>
+    // --- LOGIKA PANTAUAN ORANG TUA ---
+    let totalSecondsPlayed = 0;
+    setInterval(() => {
+        totalSecondsPlayed++;
+        let mins = Math.floor(totalSecondsPlayed / 60);
+        let secs = totalSecondsPlayed % 60;
+        document.getElementById('parent-monitor').innerText = `Pantauan Orang Tua - Durasi Main: ${mins}m ${secs}s`;
+    }, 1000);
+
+    // --- SCENE LOGIN (MENU UTAMA) ---
+    class LoginScene extends Phaser.Scene {
+        constructor() { super('LoginScene'); }
+        
+        create() {
+            const { width, height } = this.scale;
+            
+            // Penentuan Warna Background Berdasarkan Waktu Real-Time
+            let hour = new Date().getHours();
+            let bgColor = 0xfff9c4; // Pagi (Kuning Cerah)
+            if(hour >= 15 && hour < 18) bgColor = 0xffe0b2; // Sore (Oranye Lembut)
+            else if(hour >= 18 || hour < 5) bgColor = 0xd1c4e9; // Malam (Ungu Muda)
+            
+            this.add.rectangle(width/2, height/2, width, height, bgColor);
+
+            // Judul Game
+            this.add.text(width/2, height * 0.15, 'GAVIN G.E BERKAH PERKASA', { 
+                fontSize: Math.min(width * 0.05, 40) + 'px', 
+                fill: '#1a237e', 
+                fontWeight: 'bold',
+                stroke: '#ffffff',
+                strokeThickness: 6
+            }).setOrigin(0.5);
+
+            this.add.text(width/2, height * 0.25, 'PILIH TEMANMU:', { fontSize: '20px', fill: '#ff5722' }).setOrigin(0.5);
+
+            // Pilihan Avatar
+            let avatars = [
+                {n:'Kelinci', c:0xffffff, x: width * 0.25}, 
+                {n:'Kucing', c:0xffb74d, x: width * 0.5}, 
+                {n:'Beruang', c:0x8d6e63, x: width * 0.75}
+            ];
+            
+            this.selectedAvatar = avatars[1];
+
+            avatars.forEach(a => {
+                let container = this.add.container(a.x, height * 0.5);
+                let circle = this.add.circle(0, 0, width * 0.08, a.c).setInteractive({useHandCursor:true}).setStrokeStyle(5, 0x333);
+                let label = this.add.text(0, width * 0.12, a.n, {fontSize: '22px', fill:'#333', fontWeight:'bold'}).setOrigin(0.5);
+                container.add([circle, label]);
+
+                circle.on('pointerdown', () => {
+                    this.selectedAvatar = a;
+                    this.speak(`Halo Gavin, aku ${a.n}. Ayo kita main!`);
+                    this.tweens.add({ targets: container, scale: 1.2, duration: 100, yoyo: true });
+                });
+            });
+
+            // Tombol Mulai
+            let btn = this.add.rectangle(width/2, height * 0.82, width * 0.4, 70, 0x4caf50).setInteractive({useHandCursor:true});
+            this.add.text(width/2, height * 0.82, 'MULAI BERMAIN', {fontSize:'28px', fill:'#fff', fontWeight:'bold'}).setOrigin(0.5);
+            
+            btn.on('pointerdown', () => {
+                this.scene.start('GameScene', { avatar: this.selectedAvatar });
+            });
+        }
+
+        speak(t) { 
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(t)); 
+        }
+    }
+
+    // --- SCENE GAME (ARENA BERMAIN) ---
+    class GameScene extends Phaser.Scene {
+        constructor() { super('GameScene'); }
+        
+        init(data) { 
+            this.chosenAvatar = data.avatar; 
+            this.score = 0;
+            this.timeLeft = 60; // Timer 60 detik
+        }
+
+        create() {
+            const { width, height } = this.scale;
+            
+            // Warna Langit Dinamis Sesuai Waktu
+            let hour = new Date().getHours();
+            let skyColor = 0x87CEEB; // Siang
+            if(hour >= 15 && hour < 18) skyColor = 0xF4A460; // Sore
+            else if(hour >= 18 || hour < 5) skyColor = 0x2c3e50; // Malam
+
+            this.add.rectangle(width/2, height/2, width, height, skyColor);
+            
+            // UI Text
+            this.scoreText = this.add.text(25, 25, 'Bintang: 0 ⭐', {fontSize: '30px', fill:'#fff', stroke: '#000', strokeThickness: 5});
+            this.timerText = this.add.text(width - 25, 25, 'Waktu: 60', {fontSize: '30px', fill:'#ffeb3b', stroke: '#000', strokeThickness: 5}).setOrigin(1, 0);
+            
+            this.targetText = this.add.text(width/2, height * 0.3, '', {fontSize: '80px', fontWeight:'bold', stroke: '#fff', strokeThickness: 10}).setOrigin(0.5);
+            
+            // Tombol Ganti Teman (Navigasi Kembali)
+            let backBtn = this.add.text(width/2, height - 40, '← GANTI TEMAN', {
+                fontSize:'18px', fill:'#fff', backgroundColor:'#ff5722', padding: {x:15, y:10}
+            }).setOrigin(0.5).setInteractive({useHandCursor:true});
+            
+            backBtn.on('pointerdown', () => this.scene.start('LoginScene'));
+
+            // Setup Partikel Kembang Api
+            this.emitter = this.add.particles(0, 0, 'flare', {
+                frame: ['red', 'blue', 'green', 'yellow', 'white'],
+                lifespan: 1200,
+                speed: { min: 200, max: 450 },
+                scale: { start: 0.6, end: 0 },
+                gravityY: 250,
+                emitting: false
+            });
+
+            // Logika Timer
+            this.timeEvent = this.time.addEvent({ delay: 1000, callback: this.updateTimer, callbackScope: this, loop: true });
+
+            this.colors = [
+                {n:'MERAH', h:0xff0000}, {n:'BIRU', h:0x0000ff}, 
+                {n:'HIJAU', h:0x2e7d32}, {n:'KUNING', h:0xfdd835}
+            ];
+
+            this.roundObjects = this.add.group();
+            this.playRound();
+        }
+
+        updateTimer() {
+            this.timeLeft--;
+            this.timerText.setText('Waktu: ' + this.timeLeft);
+            
+            if(this.timeLeft <= 0) {
+                this.timeEvent.remove();
+                this.speak("Waktu habis Gavin! Kamu hebat!");
+                this.scene.start('LoginScene');
+            }
+        }
+
+        playRound() {
+            const { width, height } = this.scale;
+            this.roundObjects.clear(true, true);
+            
+            let target = Phaser.Utils.Array.GetRandom(this.colors);
+            this.targetText.setText(target.n).setFill('#' + target.h.toString(16).padStart(6, '0'));
+            
+            this.speak(`Gavin, cari warna ${target.n}`);
+
+            this.colors.forEach((c, i) => {
+                let circle = this.add.circle(width * (0.2 + (i * 0.2)), height * 0.65, width * 0.09, c.h)
+                    .setInteractive({useHandCursor:true})
+                    .setStrokeStyle(6, 0xffffff);
+                
+                circle.on('pointerdown', () => {
+                    if(c.h === target.h) {
+                        this.handleCorrect(circle);
+                    } else {
+                        this.cameras.main.shake(200, 0.01);
+                        this.speak("Bukan yang itu");
+                    }
+                });
+                this.roundObjects.add(circle);
+            });
+        }
+
+        handleCorrect(obj) {
+            this.score++;
+            this.scoreText.setText('Bintang: ' + this.score + ' ⭐');
+            
+            // Efek kembang api setiap klik benar
+            this.emitter.explode(30, obj.x, obj.y);
+
+            this.tweens.add({
+                targets: obj, scale: 1.4, alpha: 0, duration: 250,
+                onComplete: () => {
+                    if (this.score % 5 === 0) {
+                        this.celebrate();
+                    } else {
+                        this.playRound();
+                    }
+                }
+            });
+        }
+
+        celebrate() {
+            const { width, height } = this.scale;
+            this.speak(`Hebat Gavin! Dapat ${this.score} bintang!`);
+            
+            // Ledakan kembang api besar
+            for(let i=0; i<5; i++) {
+                this.time.delayedCall(i * 300, () => {
+                    this.emitter.explode(50, Phaser.Math.Between(100, width-100), Phaser.Math.Between(100, height-200));
+                });
+            }
+            this.time.delayedCall(2000, () => this.playRound());
+        }
+
+        speak(t) { 
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(t)); 
+        }
+    }
+
+    // --- KONFIGURASI PHASER ---
+    const config = { 
+        type: Phaser.AUTO, 
+        parent: 'game-container',
+        scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+            width: 800,
+            height: 600
+        },
+        scene: [LoginScene, GameScene],
+        callbacks: {
+            postBoot: function (game) {
+                // Membuat texture kembang api tanpa perlu file gambar luar
+                let canvas = game.textures.createCanvas('flare', 20, 20);
+                canvas.context.fillStyle = '#ffffff';
+                canvas.context.beginPath();
+                canvas.context.arc(10, 10, 8, 0, Math.PI * 2);
+                canvas.context.fill();
+                canvas.refresh();
+            }
+        }
+    };
+
+    new Phaser.Game(config);
+</script>
+</body>
+</html>
