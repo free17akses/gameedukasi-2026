@@ -3,206 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GAVIN EDU-PLAY | Final Version</title>
+    <title>GAVIN EDU-PLAY | Versi Stabil</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap');
+        body { margin: 0; background: #B5FFFC; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Quicksand', sans-serif; }
+        #game-container { border: 8px solid white; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
         
-        body { 
-            margin: 0; padding: 0; 
-            background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%); 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; overflow: hidden; font-family: 'Quicksand', sans-serif; 
-        }
-
-        #game-container { 
-            border: 10px solid white; border-radius: 25px; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2); overflow: hidden; 
-        }
-
-        /* Dashboard & Overlay */
-        #parent-btn { 
-            position: fixed; bottom: 20px; left: 20px; padding: 12px 20px; 
-            background: white; border: none; border-radius: 50px; 
-            cursor: pointer; z-index: 1000; font-weight: bold; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-        }
-
-        #parent-overlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); 
-            z-index: 5000; flex-direction: column; justify-content: center; align-items: center; 
-        }
-
-        .gate-box { 
-            background: white; padding: 30px; border-radius: 25px; 
-            text-align: center; width: 360px; max-height: 85vh; overflow-y: auto; 
-        }
-
-        .upload-item { 
-            margin: 15px 0; padding: 10px; border: 2px dashed #4CAF50; border-radius: 15px; 
-            background: #f9f9f9;
-        }
-
-        .upload-item label { display: block; margin-bottom: 8px; font-weight: bold; color: #2c3e50; }
-
-        input[type="file"] { width: 100%; font-size: 12px; }
-
-        button.primary { 
-            background: #4CAF50; color: white; border: none; padding: 12px; 
-            border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; 
-        }
-
-        /* Iframe Viewer */
-        #content-viewer { 
-            display: none; position: fixed; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); width: 90%; height: 80%; 
-            background: white; z-index: 4000; border-radius: 20px; border: 5px solid white;
-        }
-        .close-v { position: absolute; top: -50px; right: 0; background: red; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
+        /* Tombol & Overlay */
+        #parent-btn { position: fixed; bottom: 20px; left: 20px; padding: 12px 20px; background: white; border: none; border-radius: 50px; cursor: pointer; z-index: 1000; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        #parent-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 5000; flex-direction: column; justify-content: center; align-items: center; color: #333; }
+        .gate-box { background: white; padding: 30px; border-radius: 25px; text-align: center; width: 340px; }
+        .upload-section { margin: 15px 0; padding: 10px; border: 2px dashed #4CAF50; border-radius: 15px; background: #f9f9f9; }
+        input[type="file"] { width: 100%; margin-top: 5px; font-size: 12px; }
     </style>
 </head>
 <body>
 
-    <div id="game-container"></div>
-    <button id="parent-btn" onclick="openGate()">⚙️ Dashboard Orang Tua</button>
+<div id="game-container"></div>
+<button id="parent-btn" onclick="openGate()">⚙️ Dashboard Orang Tua</button>
 
-    <div id="parent-overlay">
-        <div id="security-gate" class="gate-box">
-            <h2 style="color:#1A237E">🔒 Verifikasi Orang Tua</h2>
-            <p id="math-question" style="font-size: 18px;"></p>
-            <input type="number" id="gate-answer" placeholder="Jawaban" style="width:70%; padding:12px; font-size:20px; border-radius:10px; border:2px solid #ddd; text-align:center;">
-            <br><br>
-            <button class="primary" onclick="checkGate()">BUKA DASHBOARD</button>
-            <p onclick="closeOverlay()" style="cursor:pointer; color:#999; margin-top:15px;">Kembali</p>
-        </div>
-
-        <div id="monitor-info" style="display:none;" class="gate-box">
-            <h3 style="margin-top:0">📊 Panel Kendali</h3>
-            <p>Durasi Main: <b id="timer-text">0m 0s</b></p>
-            <hr>
-            <h4>🖼️ Ganti Gambar (PNG)</h4>
-            
-            <div class="upload-item">
-                <label>Latar Belakang:</label>
-                <input type="file" accept="image/*" onchange="handleUpload(event, 'bg_custom')">
-            </div>
-
-            <div class="upload-item">
-                <label>Karakter Gavin:</label>
-                <input type="file" accept="image/*" onchange="handleUpload(event, 'char_custom')">
-            </div>
-
-            <div class="upload-item">
-                <label>Logo/Judul:</label>
-                <input type="file" accept="image/*" onchange="handleUpload(event, 'logo_custom')">
-            </div>
-
-            <button class="primary" onclick="closeOverlay()">SIMPAN & SELESAI</button>
-            <button onclick="clearData()" style="margin-top:10px; background:none; border:none; color:red; cursor:pointer; font-size:12px;">Reset ke Gambar Default</button>
-        </div>
+<div id="parent-overlay">
+    <div id="security-gate" class="gate-box">
+        <h2>🔒 Keamanan</h2>
+        <p id="math-question"></p>
+        <input type="number" id="gate-answer" style="width:80%; padding:10px; font-size:20px; text-align:center;">
+        <br><br>
+        <button onclick="checkGate()" style="background:#4CAF50; color:white; padding:12px; border:none; border-radius:10px; width:100%; cursor:pointer;">MASUK</button>
     </div>
 
-    <div id="content-viewer">
-        <button class="close-v" onclick="closeViewer()">TUTUP [X]</button>
-        <iframe id="content-frame" src="" style="width:100%; height:100%; border:none; border-radius:15px;"></iframe>
+    <div id="monitor-info" style="display:none;" class="gate-box">
+        <h3 style="margin-top:0">🎨 Pengaturan Gambar</h3>
+        
+        <div class="upload-section">
+            <label style="font-size:12px; font-weight:bold;">Latar Belakang (BG):</label>
+            <input type="file" accept="image/*" onchange="saveToStorage(event, 'bg_gavin')">
+        </div>
+
+        <div class="upload-section">
+            <label style="font-size:12px; font-weight:bold;">Karakter Gavin:</label>
+            <input type="file" accept="image/*" onchange="saveToStorage(event, 'char_gavin')">
+        </div>
+
+        <button onclick="location.reload()" style="background:#2196F3; color:white; padding:12px; border:none; border-radius:10px; width:100%; cursor:pointer; font-weight:bold;">TERAPKAN & REFRESH</button>
+        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer; font-size:11px;">Reset ke Default</button>
     </div>
+</div>
 
 <script>
-    // --- GLOBAL VARIABLES ---
-    let totalSecs = 0;
     let currentAns = 0;
-    let game;
 
-    // Timer logic
-    setInterval(() => {
-        totalSecs++;
-        document.getElementById('timer-text').innerText = `${Math.floor(totalSecs/60)}m ${totalSecs%60}s`;
-    }, 1000);
-
-    // --- GATE LOGIC ---
     function openGate() {
-        let a = Math.floor(Math.random()*4)+3; let b = Math.floor(Math.random()*3)+2;
+        let a = Math.floor(Math.random()*5)+2; let b = Math.floor(Math.random()*4)+2;
         currentAns = a * b;
         document.getElementById('math-question').innerText = `Berapa ${a} x ${b}?`;
         document.getElementById('parent-overlay').style.display = 'flex';
         document.getElementById('security-gate').style.display = 'block';
         document.getElementById('monitor-info').style.display = 'none';
-        document.getElementById('gate-answer').value = '';
     }
 
     function checkGate() {
         if(parseInt(document.getElementById('gate-answer').value) === currentAns) {
             document.getElementById('security-gate').style.display = 'none';
             document.getElementById('monitor-info').style.display = 'block';
-        } else { alert("Akses Ditolak!"); closeOverlay(); }
+        } else { alert("Jawaban Salah!"); document.getElementById('parent-overlay').style.display = 'none'; }
     }
 
-    function closeOverlay() { document.getElementById('parent-overlay').style.display = 'none'; }
-
-    // --- UPLOAD & STORAGE LOGIC ---
-    function handleUpload(event, storageKey) {
+    function saveToStorage(event, key) {
         const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const base64Image = e.target.result;
-            localStorage.setItem(storageKey, base64Image); // Simpan permanen
-            location.reload(); // Reload untuk terapkan gambar
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function clearData() {
-        if(confirm("Hapus semua gambar kustom?")) {
-            localStorage.clear();
-            location.reload();
+        if (file && file.size < 2000000) { // Maksimal 2MB
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                localStorage.setItem(key, e.target.result);
+                alert("Gambar tersimpan di memori browser!");
+            };
+            reader.readAsDataURL(file);
+        } else {
+            alert("File terlalu besar atau tidak ada!");
         }
     }
 
-    function showContent(url) {
-        document.getElementById('content-frame').src = url;
-        document.getElementById('content-viewer').style.display = 'block';
-    }
-    function closeViewer() {
-        document.getElementById('content-frame').src = "";
-        document.getElementById('content-viewer').style.display = 'none';
-    }
-
-    // --- PHASER GAME ---
-    class MainGame extends Phaser.Scene {
-        constructor() { super('MainGame'); }
-
+    class GameScene extends Phaser.Scene {
+        constructor() { super('GameScene'); }
         preload() {
-            // Cek apakah ada gambar di LocalStorage, jika tidak pakai placeholder
-            const customBG = localStorage.getItem('bg_custom') || 'https://picsum.photos/1280/720';
-            const customChar = localStorage.getItem('char_custom') || 'https://via.placeholder.com/300x400/FFC107/FFFFFF?text=Gavin';
-            const customLogo = localStorage.getItem('logo_custom') || 'https://via.placeholder.com/600x150/1A237E/FFFFFF?text=GAVIN+EDUPLAY';
+            // Cek Data dari Browser
+            const bgData = localStorage.getItem('bg_gavin');
+            const charData = localStorage.getItem('char_gavin');
 
-            this.load.image('bg', customBG);
-            this.load.image('char', customChar);
-            this.load.image('logo', customLogo);
-            this.load.image('btn', 'https://via.placeholder.com/200x70/4CAF50/FFFFFF?text=MULAI+BELAJAR');
+            // Logika Fallback: Jika data ada pakai Base64, jika tidak pakai Placeholder
+            if(bgData) this.textures.addBase64('bg', bgData);
+            else this.load.image('bg', 'https://via.placeholder.com/1280x720/80deea/ffffff?text=Upload+Latar+Belakang');
+
+            if(charData) this.textures.addBase64('char', charData);
+            else this.load.image('char', 'https://via.placeholder.com/300x400/ffb300/ffffff?text=Gavin');
+            
+            this.load.image('btn', 'https://via.placeholder.com/200x80/4caf50/ffffff?text=PLAY');
         }
-
         create() {
             this.add.image(640, 360, 'bg').setDisplaySize(1280, 720);
-            this.add.image(640, 160, 'logo').setScale(0.8);
-            
-            let char = this.add.image(350, 500, 'char').setScale(0.7);
-            
-            let playBtn = this.add.image(900, 480, 'btn').setInteractive({useHandCursor: true});
-            
-            playBtn.on('pointerover', () => playBtn.setScale(1.1));
-            playBtn.on('pointerout', () => playBtn.setScale(1.0));
-            
-            playBtn.on('pointerdown', () => {
-                // Link edukasi (Bisa diganti sesuai kebutuhan)
-                showContent('https://www.youtube.com/embed/dQw4w9WgXcQ');
-            });
-
-            this.add.text(900, 550, 'Tekan tombol untuk mulai', { fontSize: '18px', fill: '#000', backgroundColor: '#fff' }).setOrigin(0.5);
+            this.add.image(400, 500, 'char').setScale(0.8);
+            let playBtn = this.add.image(900, 450, 'btn').setInteractive({useHandCursor: true});
+            playBtn.on('pointerdown', () => alert("Mulai Petualangan!"));
         }
     }
 
@@ -210,12 +111,10 @@
         type: Phaser.AUTO,
         parent: 'game-container',
         width: 1280, height: 720,
-        backgroundColor: '#B5FFFC',
         scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-        scene: [MainGame]
+        scene: [GameScene]
     };
-
-    game = new Phaser.Game(config);
+    new Phaser.Game(config);
 </script>
 </body>
 </html>
